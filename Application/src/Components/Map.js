@@ -15,7 +15,7 @@ class RadarMap extends React.Component {
       zoom: 14,
     });
 
-    Radar.ui
+    // Radar.ui
   }
 
   render() {
