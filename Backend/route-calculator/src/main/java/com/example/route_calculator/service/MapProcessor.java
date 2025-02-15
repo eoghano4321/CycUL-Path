@@ -5,7 +5,7 @@ import java.util.*;
 
 public class MapProcessor {
     public static Graph loadGraph() {
-        // Implement loading graph from real road data
+        // Load a graph from geojson data
         return new Graph();
     }
 }
