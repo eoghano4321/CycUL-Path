@@ -4,6 +4,9 @@ import java.util.List;
 public class PathResponse {
     private List<Node> path;
 
+    public PathResponse(){
+    }
+    
     public PathResponse(List<Node> path) {
         this.path = path;
     }

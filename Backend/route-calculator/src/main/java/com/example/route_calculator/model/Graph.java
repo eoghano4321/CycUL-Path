@@ -11,7 +11,7 @@ public class Graph {
         return new Node("1", lat, lng); 
     }
 
-    public void addNode(String id, double lat, double lon) {
+    public void addNode(String id, double lat, double lon, double weight) {
         nodes.putIfAbsent(id, new Node(id, lat, lon));
     }
 
