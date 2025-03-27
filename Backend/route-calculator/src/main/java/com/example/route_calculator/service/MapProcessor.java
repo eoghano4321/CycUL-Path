@@ -1,11 +1,14 @@
-package com.example.route_calculator.service;
+// package com.example.route_calculator.service;
 
-import com.example.route_calculator.model.*;
-import java.util.*;
+// import com.example.route_calculator.model.*;
+// import org.jgrapht.Graph;
+// import org.jgrapht.graph.DefaultWeightedEdge;
 
-public class MapProcessor {
-    public static Graph loadGraph() {
-        // Load a graph from geojson data
-        return new Graph();
-    }
-}
+// import java.util.*;
+
+// public class MapProcessor {
+//     public static Graph<Node, DefaultWeightedEdge> loadGraph() {
+//         // Load a graph from geojson data
+//         return new Graph();
+//     }
+// }

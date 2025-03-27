@@ -36,3 +36,32 @@
     transform: rotate(360deg);
   }
 }
+
+.geocoder {
+  position: absolute;
+  z-index: 1;
+  top: 50px; /* Position below the first geocoder */
+  left: 10px;
+}
+
+.mapboxgl-ctrl-geocoder {
+  border-radius: 16px !important;
+}
+
+.search-button {
+  position: absolute;
+  z-index: 1;
+  top: 90px; 
+  left: 10px;
+  width: 100%;
+  min-width: 240px;
+}
+
+.bottom-logo {
+  position: absolute;
+  z-index: 1;
+  height: 64px;
+  width: 64px;
+  bottom: 20px;
+  left: 20px;
+}
