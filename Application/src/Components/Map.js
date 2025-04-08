@@ -8,6 +8,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import SearchButton from './SearchButton';
 import LogoBlue from '../Assets/LogoBlue.svg';
 import '../App.css';
+import { ToastContainer, toast } from 'react-toastify';
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZW9naGFub20iLCJhIjoiY204MGMxZTl0MHR1dTJsc2ZhYm01dW9pZyJ9.WJcOQwwDoWZiej24U6o3vA';
 
@@ -33,7 +34,7 @@ const MapboxMap = () => {
       const path = await getShortestPath(startLocation[1], startLocation[0], destinationLocation[1], destinationLocation[0]);
       setPathData(path);
     } else {
-      alert("Please select both start and destination locations.");
+      toast.error("Please select both start and destination locations.");
     }
   };
 
@@ -192,7 +193,6 @@ const MapboxMap = () => {
               ],
               'line-width': 2,
               'line-opacity': 0.7,
-              'line-cap': 'round',
             },
             layout: { visibility: cycleLaneVisible ? 'visible' : 'none' },
           });
@@ -284,6 +284,12 @@ const MapboxMap = () => {
   return (
     <div id="map-container" style={{ width: '100%', height: '100vh', position: 'absolute' }}>
       <div id="map" style={{ height: '100%', position: 'absolute', width: '100%' }} />
+      <ToastContainer 
+        position="bottom-center" 
+        autoClose={500} 
+        closeButton={false} 
+        theme='light'
+      />
     </div>
   );
 };

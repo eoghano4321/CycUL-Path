@@ -24,4 +24,10 @@ yarn-error.log*
 
 */logs
 
+*.gz
+
 */.vscode
+
+*.json
+
+*.geojson

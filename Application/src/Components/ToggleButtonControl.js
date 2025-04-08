@@ -12,7 +12,6 @@ class ToggleButtonControl {
     Object.assign(this.button.style, {
       background: "rgba(19, 54, 110, 0.8)",
       color: "#FFF",
-      border: "1px solid #ccc",
       padding: "8px 12px",
       fontSize: "14px",
       borderRadius: "16px",
