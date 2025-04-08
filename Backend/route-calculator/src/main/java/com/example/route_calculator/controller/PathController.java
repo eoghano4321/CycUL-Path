@@ -22,7 +22,9 @@ public class PathController {
         Graph<Node, DefaultWeightedEdge> graph = GraphService.getGraph();
         AStar aStar = new AStar(graph);
         List<Node> path = aStar.findShortestPath(startLat, startLon, endLat, endLon);
-        System.out.println("Computed Path: " + path);
+        if(path == null || path.isEmpty()) {
+            return "{\"error\": \"No path found\"}";
+        }
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode featureCollection = mapper.createObjectNode();
         featureCollection.put("type", "FeatureCollection");

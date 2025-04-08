@@ -13,6 +13,7 @@ import com.example.route_calculator.model.Node;
 import com.example.route_calculator.utils.GeoJsonGraphBuilder;
 import com.example.route_calculator.utils.GeoJsonLoader;
 import com.example.route_calculator.utils.GraphSerialiser;
+import com.example.route_calculator.utils.IncidentIndex;
 
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -28,6 +29,7 @@ public class GraphService implements InitializingBean {
     public void afterPropertiesSet() throws Exception {
         graph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
         loadGraph();
+        loadIncidents();
     }
 
     private void loadGraph() {
@@ -37,7 +39,7 @@ public class GraphService implements InitializingBean {
                 System.out.println("File exists");
                 graph = GraphSerialiser.loadGraphFromFile(filePath);
             } else {
-                JsonNode geoJson = GeoJsonLoader.loadGeoJson("src/main/resources/OSM_Dublin_AllRoads.geojson");
+                JsonNode geoJson = GeoJsonLoader.loadGeoJson("src/main/resources/OSM_Dublin_CycleableRoads.geojson");
                 if (geoJson == null) {
                     System.err.println("No geojson loaded");
                     throw new IOException("GeoJSON file could not be loaded.");
@@ -51,6 +53,23 @@ public class GraphService implements InitializingBean {
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Failed to load GeoJSON file.");
+        }
+    }
+
+    private void loadIncidents() {
+        try {
+            String filePath = "src/main/resources/dublin_incidents_mar2025.geojson";
+            if (Files.exists(Paths.get(filePath))) {
+                System.out.println("File exists");
+                IncidentIndex.loadGeoJSON(filePath);
+                double incidentWeight = IncidentIndex.getIncidentWeight(53.349805, 53.350015, -6.25031, -6.26031);
+                System.out.println("Incident weight: " + incidentWeight);
+            } else {
+                System.out.println("File does not exist");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Failed to load incident data.");
         }
     }
 

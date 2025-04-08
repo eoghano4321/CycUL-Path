@@ -20,7 +20,7 @@ import org.jgrapht.graph.SimpleWeightedGraph;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class GeoJsonGraphBuilder {
-    private static Map<String, Double> getWeights() {
+    private static Map<String, Double> getSurfaceWeights() {
         Map<String, Double> surfaceWeights = new HashMap<>();
         surfaceWeights.put("asphalt", 1.0);
         surfaceWeights.put("concrete", 1.1);
@@ -31,7 +31,13 @@ public class GeoJsonGraphBuilder {
         return surfaceWeights;
     }
 
-    private static final double MERGE_DISTANCE_THRESHOLD = 0.002; // 2 meters
+    private static Map<String, Double> getRoadWeights() {
+        Map<String, Double> roadWeights = new HashMap<>();
+        roadWeights.put("motorway", 1.0);
+        return roadWeights;
+    }
+
+    private static final double MERGE_DISTANCE_THRESHOLD = 0.001; // 2 meters
 
     public static double haversine(double lat1, double lon1, double lat2, double lon2) {
         final double R = 6371; // Radius of Earth in km
@@ -48,7 +54,7 @@ public class GeoJsonGraphBuilder {
     private static Node findOrCreateNode(String id, double lat, double lon, Graph<Node, DefaultWeightedEdge> graph, List<Node> existingNodes) {
         synchronized (existingNodes) {
             for (Node node : existingNodes) {
-                if ((Math.sqrt((node.lat - lat) * (node.lat - lat) + (node.lon - lon) * (node.lon - lon)) * 111.32) < MERGE_DISTANCE_THRESHOLD) {
+                if (haversine(lat, lon, node.lat, node.lon) < MERGE_DISTANCE_THRESHOLD) {
                     return node; // Return an existing node if within threshold
                 }
             }
@@ -72,7 +78,8 @@ public class GeoJsonGraphBuilder {
         System.out.println("Building graph:");
         long start_time = System.currentTimeMillis();
 
-        Map<String, Double> surfaceWeights = getWeights();
+        Map<String, Double> surfaceWeights = getSurfaceWeights();
+        Map<String, Double> roadWeights = getRoadWeights();
         Graph<Node, DefaultWeightedEdge> graph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
         List<Node> allNodes = Collections.synchronizedList(new ArrayList<>());  // Thread-safe list
 
