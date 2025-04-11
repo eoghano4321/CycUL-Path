@@ -13,7 +13,11 @@ filtered_features = [
     feature for feature in data["features"]
     if feature.get("properties", {}).get("bicycle") not in exclude_values
 ]
-
+# Further filter out features with highway property equal to "motorway"
+filtered_features = [
+    feature for feature in filtered_features
+    if feature.get("properties", {}).get("highway") not in {"motorway", "motorway_link", "raceway", "proposed", "construction"}
+]
 # Create new FeatureCollection
 filtered_collection = geojson.FeatureCollection(filtered_features)
 

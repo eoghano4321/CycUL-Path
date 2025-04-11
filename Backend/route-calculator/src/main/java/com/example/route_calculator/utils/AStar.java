@@ -1,9 +1,7 @@
 package com.example.route_calculator.utils;
 
 import org.jgrapht.Graph;
-import org.jgrapht.alg.shortestpath.AStarShortestPath;
 import org.jgrapht.graph.DefaultWeightedEdge;
-import org.slf4j.LoggerFactory;
 
 import com.example.route_calculator.model.Node;
 
@@ -16,8 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
-
-import org.slf4j.Logger;
 
 public class AStar {
     private static class PathNode {
@@ -32,8 +28,6 @@ public class AStar {
         }
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(AStar.class);
-    
     private final Graph<Node, DefaultWeightedEdge> graph;
 
     public AStar(Graph<Node, DefaultWeightedEdge> graph) {
@@ -114,7 +108,6 @@ public class AStar {
         double maxLat = Math.max(n1.lat, n2.lat);
         double minLon = Math.min(n1.lon, n2.lon);
         double maxLon = Math.max(n1.lon, n2.lon);
-        logger.debug("Incident weight for segment: {} to {}: minLat={}, maxLat={}, minLon={}, maxLon={}", n1, n2, minLat, maxLat, minLon, maxLon);
         return IncidentIndex.getIncidentWeight(minLat, maxLat, minLon, maxLon);
     }
 

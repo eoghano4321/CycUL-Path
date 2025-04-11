@@ -6,4 +6,4 @@
 
 ## Run
 - Use `mvn spring-boot:run` to start the application
-- Use `mvn spring-boot:run --Dfresh` to start the application with a fresh graph
+- Use `mvn spring-boot:run -Dfresh` to start the application with a fresh graph
