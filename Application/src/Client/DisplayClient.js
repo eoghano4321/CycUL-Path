@@ -1,8 +1,12 @@
-import axios from 'axios'
+import axios from 'axios';
 
 export async function getMapData() {
     try {
-        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/display/map`);
+        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/display/map`, {
+            headers: {
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
         console.log(response);
         return JSON.stringify(response.data);
     } catch (error) {
@@ -13,7 +17,11 @@ export async function getMapData() {
 
 export async function getIncidents() {
     try {
-        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/display/incidents`);
+        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/display/incidents`, {
+            headers: {
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
         console.log(response);
         return JSON.stringify(response.data);
     } catch (error) {
@@ -22,11 +30,15 @@ export async function getIncidents() {
     }
 }
 
-export async function getShortestPath(startLat, startLon, endLat, endLon){
-    try{
-        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/shortest-path?startLat=${startLat}&startLon=${startLon}&endLat=${endLat}&endLon=${endLon}`);
+export async function getShortestPath(startLat, startLon, endLat, endLon) {
+    try {
+        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/shortest-path?startLat=${startLat}&startLon=${startLon}&endLat=${endLat}&endLon=${endLon}`, {
+            headers: {
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
         console.log(response);
-        return JSON.stringify(response.data)
+        return JSON.stringify(response.data);
     } catch (error) {
         console.error("Error fetching map data: ", error);
         throw error;
