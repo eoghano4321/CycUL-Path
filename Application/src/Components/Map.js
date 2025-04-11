@@ -9,8 +9,11 @@ import SearchButton from './SearchButton';
 import LogoBlue from '../Assets/LogoBlue.svg';
 import '../App.css';
 import { ToastContainer, toast } from 'react-toastify';
+import CancelButton from './CancelButton';
+import incidentLayer from '../MapboxLayers/IncidentLayer';
+import cycleLaneLayer from '../MapboxLayers/CycleLaneLayer';
 
-mapboxgl.accessToken = 'pk.eyJ1IjoiZW9naGFub20iLCJhIjoiY204MGMxZTl0MHR1dTJsc2ZhYm01dW9pZyJ9.WJcOQwwDoWZiej24U6o3vA';
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
 const MapboxMap = () => {
   const mapRef = useRef(null);
@@ -20,6 +23,33 @@ const MapboxMap = () => {
   const [startLocation, setStartLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [pathData, setPathData] = useState(null);
+  const startSearch = new MapboxGeocoder({
+    accessToken: mapboxgl.accessToken,
+    mapboxgl: mapboxgl,
+    marker: false,
+    placeholder: 'Start Location',
+    countries: 'IE',
+    marker: {
+      color: 'red' 
+    },
+    proximity: {
+      longitude: -6.2603,
+      latitude: 53.3498,
+    }
+  })
+  const destinationSearch = new MapboxGeocoder({
+    accessToken: mapboxgl.accessToken,
+    mapboxgl: mapboxgl,
+    marker: {
+    color: 'green'
+    },
+    placeholder: 'Destination',
+    countries: 'IE',
+    proximity: {
+    longitude: -6.2603,
+    latitude: 53.3498,
+    }
+  })
 
   const handleCycleLaneToggle = () => {
     setCycleLaneVisible((prev) => !prev);
@@ -35,6 +65,18 @@ const MapboxMap = () => {
       setPathData(path);
     } else {
       toast.error("Please select both start and destination locations.");
+    }
+  };
+
+  const handleCancel = () => {
+    setPathData(null);
+    if (mapRef.current.getLayer('path-layer')) {
+      mapRef.current.removeLayer('path-layer');
+      mapRef.current.removeSource('path-source');
+    }
+    const markers = document.getElementsByClassName('mapboxgl-marker');
+    while (markers.length > 0) {
+      markers[0].remove();
     }
   };
 
@@ -54,11 +96,7 @@ const MapboxMap = () => {
   
     mapRef.current = map;
     const controlContainer = document.createElement("div");
-    
-    controlContainer.style.display = "flex";
-    controlContainer.style.flexDirection = "row";
-    controlContainer.style.gap = "5px";
-    controlContainer.style.padding = "10px 10px 5px 0px ";
+    controlContainer.style = "display: flex; flex-direction: row; gap: 5px; padding: 10px 10px 5px 0px;";
 
     const cycleLaneButton = new ToggleButtonControl("Toggle Cycle Lanes", handleCycleLaneToggle);
     const incidentButton = new ToggleButtonControl("Toggle Incidents", handleIncidentToggle);
@@ -78,20 +116,6 @@ const MapboxMap = () => {
     mapRef.current.addControl(toggleWrapper, 'top-right');
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
   
-    const startSearch = new MapboxGeocoder({
-      accessToken: mapboxgl.accessToken,
-      mapboxgl: mapboxgl,
-      marker: false,
-      placeholder: 'Start Location',
-      countries: 'IE',
-      marker: {
-        color: 'red' 
-        },
-      flyTo: false,
-      proximity: {
-        longitude: -6.2603,
-        latitude: 53.3498,}
-    })
     mapRef.current.addControl(
       startSearch, 'top-left'
     );
@@ -101,20 +125,6 @@ const MapboxMap = () => {
       setStartLocation(coordinates);
       console.log(`Start: Longitude: ${coordinates[0]}, Latitude: ${coordinates[1]}`);
     });
-
-    const destinationSearch = new MapboxGeocoder({
-      accessToken: mapboxgl.accessToken,
-      mapboxgl: mapboxgl,
-      marker: {
-      color: 'green'
-      },
-      placeholder: 'Destination',
-      countries: 'IE',
-      proximity: {
-      longitude: -6.2603,
-      latitude: 53.3498,
-      }
-    })
 
     const geocoderContainer = document.createElement('div');
     geocoderContainer.id = 'destination-geocoder';
@@ -133,16 +143,21 @@ const MapboxMap = () => {
       console.log(`Destination: Longitude: ${coordinates[0]}, Latitude: ${coordinates[1]}`);
     });
 
-    searchButton.current = new SearchButton("Search");
+    searchButton.current = new SearchButton("Directions");
+
+    const cancelButton = CancelButton(handleCancel);
 
     const searchButtonContainer = document.createElement("div");
     searchButtonContainer.id = "search-button-container";
     searchButtonContainer.className = "search-button";
+    searchButtonContainer.style = "align-content: center; display: flex;";
+
     if(document.getElementById('search-button-container')) {
       document.getElementById('search-button-container').remove();
     }
     document.body.appendChild(searchButtonContainer);
     document.getElementById('search-button-container').appendChild(searchButton.current.onAdd(mapRef.current));
+    document.getElementById('search-button-container').appendChild(cancelButton);
 
 
     const logo = document.createElement("img");
@@ -172,30 +187,7 @@ const MapboxMap = () => {
   
         // Add cycle lanes layer
         if (!mapRef.current.getLayer('cyclelanes-layer')) {
-          mapRef.current.addLayer({
-            id: 'cyclelanes-layer',
-            type: 'line',
-            minzoom: 9,
-            source: 'features',
-            paint: {
-              'line-color': [
-                'match',
-                ['get', 'surface'],
-                'asphalt', '#000000', 
-                'concrete', '#808080',
-                'wood', '#A52A2A',
-                'compacted', '#552525',
-                'paved', '#0000DD',
-                'unpaved', '#FF0000',
-                'paving_stones', '#303030',
-                'grass', '#00EE00',
-                /* other */ '#AAAAAA'
-              ],
-              'line-width': 2,
-              'line-opacity': 0.7,
-            },
-            layout: { visibility: cycleLaneVisible ? 'visible' : 'none' },
-          });
+          mapRef.current.addLayer(cycleLaneLayer());
         }
 
         if (!mapRef.current.getSource('incident-source')) {
@@ -206,26 +198,7 @@ const MapboxMap = () => {
         }
 
         if (!mapRef.current.getLayer('incident-layer')){
-          mapRef.current.addLayer({
-            id: 'incident-layer',
-            type: 'circle',
-            source: 'incident-source',
-            minzoom: 11,
-            paint: {
-              "circle-radius": 6, // Adjust as needed
-              "circle-color": [
-                "interpolate",
-                ["linear"],
-                ["get", "Severity"], // Get the severity property
-                0,
-                'rgb(255, 247, 136)',
-                1,
-                'rgb(178,24,43)'
-              ],
-              "circle-opacity": 0.8
-            },
-            layout: { visibility: incidentsVisible ? 'visible' : 'none' },
-          })
+          mapRef.current.addLayer(incidentLayer())
         }
   
         // Add the shortest path source
@@ -269,11 +242,12 @@ const MapboxMap = () => {
         type: 'line',
         source: 'path-source',
         paint: {
-          'line-color': '#FF0000',
+          'line-color': 'rgb(19, 54, 110)',
           'line-width': 8,
           'line-join': 'round',
           'line-blur': 0.2,
-          'line-cap': 'round'
+          'line-cap': 'round',
+          'line-opacity': 0.8,
         },
         layout: { visibility: 'visible' },
       });

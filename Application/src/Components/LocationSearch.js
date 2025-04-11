@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 
 export default function AddressToGeoJSON() {
   const [address, setAddress] = useState("");
@@ -28,6 +29,7 @@ export default function AddressToGeoJSON() {
         setSuggestions(data);
       } catch (err) {
         setSuggestions([]);
+        toast.error("Failed to fetch suggestions");
       }
     };
 

@@ -2,7 +2,7 @@ import axios from 'axios'
 
 export async function getMapData() {
     try {
-        const response = await axios.get(`http://127.0.0.1:3131/api/display/map`);
+        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/display/map`);
         console.log(response);
         return JSON.stringify(response.data);
     } catch (error) {
@@ -13,7 +13,7 @@ export async function getMapData() {
 
 export async function getIncidents() {
     try {
-        const response = await axios.get(`http://127.0.0.1:3131/api/display/incidents`);
+        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/display/incidents`);
         console.log(response);
         return JSON.stringify(response.data);
     } catch (error) {
@@ -24,7 +24,7 @@ export async function getIncidents() {
 
 export async function getShortestPath(startLat, startLon, endLat, endLon){
     try{
-        const response = await axios.get(`http://127.0.0.1:3131/api/shortest-path?startLat=${startLat}&startLon=${startLon}&endLat=${endLat}&endLon=${endLon}`);
+        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/shortest-path?startLat=${startLat}&startLon=${startLon}&endLat=${endLat}&endLon=${endLon}`);
         console.log(response);
         return JSON.stringify(response.data)
     } catch (error) {
