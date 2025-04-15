@@ -19,7 +19,7 @@ export default function cycleLaneLayer() {
             /* other */ '#AAAAAA'
             ],
             'line-width': 2,
-            'line-opacity': 0.7,
+            'line-opacity': 0.4,
         },
         layout: { visibility: 'visible' },
     };

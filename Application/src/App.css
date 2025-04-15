@@ -39,7 +39,7 @@
 
 .search-button {
   position: absolute;
-  z-index: 1;
+  z-index: 0;
   top: 90px; 
   left: 10px;
   width: 100%;

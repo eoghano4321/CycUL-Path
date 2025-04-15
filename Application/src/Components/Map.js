@@ -7,6 +7,7 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import SearchButton from './SearchButton';
 import LogoBlue from '../Assets/LogoBlue.svg';
+import Incident from '../Assets/Incident.svg';
 import '../App.css';
 import { ToastContainer, toast } from 'react-toastify';
 import CancelButton from './CancelButton';
@@ -18,7 +19,6 @@ mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 const MapboxMap = () => {
   const mapRef = useRef(null);
   const searchButton = useRef(null);
-  const [cycleLaneVisible, setCycleLaneVisible] = useState(true);
   const [incidentsVisible, setIncidentsVisible] = useState(true);
   const [startLocation, setStartLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
@@ -51,17 +51,13 @@ const MapboxMap = () => {
     }
   })
 
-  const handleCycleLaneToggle = () => {
-    setCycleLaneVisible((prev) => !prev);
-  };
-
   const handleIncidentToggle = () => {
     setIncidentsVisible((prev) => !prev);
   };
 
   const handleSearch = async () => {
     if (startLocation && destinationLocation) {
-      const path = await getShortestPath(startLocation[1], startLocation[0], destinationLocation[1], destinationLocation[0]);
+      const path = await getShortestPath(startLocation[1], startLocation[0], destinationLocation[1], destinationLocation[0], incidentsVisible);
       setPathData(path);
     } else {
       toast.error("Please select both start and destination locations.");
@@ -84,7 +80,7 @@ const MapboxMap = () => {
     if (searchButton.current) {
       searchButton.current.updateOnClick(handleSearch);
     }
-  }, [startLocation, destinationLocation]);
+  }, [startLocation, destinationLocation, incidentsVisible]);
 
   useEffect(() => {
     const map = new mapboxgl.Map({
@@ -98,10 +94,8 @@ const MapboxMap = () => {
     const controlContainer = document.createElement("div");
     controlContainer.style = "display: flex; flex-direction: row; gap: 5px; padding: 10px 10px 5px 0px;";
 
-    const cycleLaneButton = new ToggleButtonControl("Toggle Cycle Lanes", handleCycleLaneToggle);
-    const incidentButton = new ToggleButtonControl("Toggle Incidents", handleIncidentToggle);
+    const incidentButton = new ToggleButtonControl("Avoid Incidents?", Incident, handleIncidentToggle);
 
-    controlContainer.appendChild(cycleLaneButton.onAdd(mapRef.current));
     controlContainer.appendChild(incidentButton.onAdd(mapRef.current));
 
     const toggleWrapper = {
@@ -209,12 +203,6 @@ const MapboxMap = () => {
   
     return () => mapRef.current.remove();
   }, []);
-
-  useEffect(() => {
-    if (mapRef.current && mapRef.current.getLayer('cyclelanes-layer')) {
-      mapRef.current.setLayoutProperty('cyclelanes-layer', 'visibility', cycleLaneVisible ? 'visible' : 'none');
-    }
-  }, [cycleLaneVisible]);
 
   useEffect(() => {
     if (mapRef.current && mapRef.current.getLayer('incident-layer')) {

@@ -15,7 +15,7 @@ export default function incidentLayer() {
             1,
             'rgb(178,24,43)'
             ],
-            "circle-opacity": 0.8
+            "circle-opacity": 0.85
         },
         layout: { visibility: 'visible'},
     };

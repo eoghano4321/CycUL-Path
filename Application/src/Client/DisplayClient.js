@@ -30,9 +30,9 @@ export async function getIncidents() {
     }
 }
 
-export async function getShortestPath(startLat, startLon, endLat, endLon) {
+export async function getShortestPath(startLat, startLon, endLat, endLon, withIncidents) {
     try {
-        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/shortest-path?startLat=${startLat}&startLon=${startLon}&endLat=${endLat}&endLon=${endLon}`, {
+        const response = await axios.get(`${process.env.REACT_APP_SERVER}/api/shortest-path?startLat=${startLat}&startLon=${startLon}&endLat=${endLat}&endLon=${endLon}&incidents=${withIncidents}`, {
             headers: {
                 'ngrok-skip-browser-warning': 'true'
             }
