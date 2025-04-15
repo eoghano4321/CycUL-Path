@@ -8,16 +8,14 @@ import com.example.route_calculator.model.Node;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
-import java.util.logging.Logger;
 
 
 public class GraphSerialiser {
-    private static Logger logger = LoggerTool.getLogger();
     public static void saveGraph(GraphResponse graph, String filePath){
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             objectMapper.writeValue(new File(filePath), graph);
-            logger.info("Graph saved to " + filePath);
+            System.out.println("Graph saved to " + filePath);
         } catch (IOException e) {
             e.printStackTrace();
         }

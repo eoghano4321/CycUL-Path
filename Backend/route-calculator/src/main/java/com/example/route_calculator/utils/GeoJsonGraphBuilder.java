@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -21,8 +20,7 @@ import org.jgrapht.graph.SimpleWeightedGraph;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class GeoJsonGraphBuilder {
-    private static final double MERGE_DISTANCE_THRESHOLD = 0.001; 
-    private static Logger logger = LoggerTool.getLogger();
+    private static final double MERGE_DISTANCE_THRESHOLD = 0.001; // 2 meters
 
     // Find or create a node at a given lat/lon
     private static Node findOrCreateNode(String id, double lat, double lon, Graph<Node, DefaultWeightedEdge> graph, List<Node> existingNodes) {
@@ -47,7 +45,7 @@ public class GeoJsonGraphBuilder {
     }
     
     public static Graph<Node, DefaultWeightedEdge> buildGraph(JsonNode geoJson) {
-        logger.info("Building graph:");
+        System.out.println("Building graph:");
         long start_time = System.currentTimeMillis();
 
         Map<String, Double> surfaceWeights = WeightCalculator.getSurfaceWeights();
@@ -120,13 +118,13 @@ public class GeoJsonGraphBuilder {
         connectNearbyNodes(graph, allNodes);
 
         long end_time = System.currentTimeMillis();
-        logger.info("Finished in " + (end_time - start_time) + "ms");
+        System.out.println("Finished in " + (end_time - start_time) + "ms");
 
         return graph;
     }
 
     private static void connectNearbyNodes(Graph<Node, DefaultWeightedEdge> graph, List<Node> allNodes) {
-        logger.info("\nConnecting nearby nodes...");
+        System.out.println("\nConnecting nearby nodes...");
 
         // Step 1: Create a spatial index (grid-based lookup)
         Map<String, List<Node>> spatialGrid = new HashMap<>();
