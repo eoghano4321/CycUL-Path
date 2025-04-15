@@ -110,9 +110,16 @@ const MapboxMap = () => {
     mapRef.current.addControl(toggleWrapper, 'top-right');
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
   
-    mapRef.current.addControl(
-      startSearch, 'top-left'
-    );
+    const startGeocoderContainer = document.createElement('div');
+    startGeocoderContainer.id = 'start-geocoder';
+    startGeocoderContainer.className = 'start-geocoder';
+    if(document.getElementById('start-geocoder')) {
+      document.getElementById('start-geocoder').remove();
+    }
+    document.body.appendChild(startGeocoderContainer);
+
+    // Add the second geocoder to the custom container
+    startGeocoderContainer.appendChild(startSearch.onAdd(mapRef.current));
 
     startSearch.on('result', (e) => {
       const coordinates = e.result.geometry.coordinates;
@@ -120,16 +127,16 @@ const MapboxMap = () => {
       console.log(`Start: Longitude: ${coordinates[0]}, Latitude: ${coordinates[1]}`);
     });
 
-    const geocoderContainer = document.createElement('div');
-    geocoderContainer.id = 'destination-geocoder';
-    geocoderContainer.className = 'geocoder';
+    const destGeocoderContainer = document.createElement('div');
+    destGeocoderContainer.id = 'destination-geocoder';
+    destGeocoderContainer.className = 'destination-geocoder';
     if(document.getElementById('destination-geocoder')) {
       document.getElementById('destination-geocoder').remove();
     }
-    document.body.appendChild(geocoderContainer);
+    document.body.appendChild(destGeocoderContainer);
 
     // Add the second geocoder to the custom container
-    document.getElementById('destination-geocoder').appendChild(destinationSearch.onAdd(mapRef.current));
+    destGeocoderContainer.appendChild(destinationSearch.onAdd(mapRef.current));
 
     destinationSearch.on('result', (e) => {
       const coordinates = e.result.geometry.coordinates;
