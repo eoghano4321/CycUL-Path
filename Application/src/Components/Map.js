@@ -52,7 +52,14 @@ const MapboxMap = () => {
   })
 
   const handleIncidentToggle = () => {
-    setIncidentsVisible((prev) => !prev);
+    setIncidentsVisible((prev) => {
+      const newVisibility = !prev;
+      const buttonElement = document.querySelector('.toggle-button');
+      if (buttonElement) {
+        buttonElement.style.backgroundColor = newVisibility ? 'rgba(19, 54, 110, 0.8)' : 'rgba(46, 51, 59, 0.8)'; 
+      }
+      return newVisibility;
+    });
   };
 
   const handleSearch = async () => {
@@ -94,7 +101,7 @@ const MapboxMap = () => {
     const controlContainer = document.createElement("div");
     controlContainer.style = "display: flex; flex-direction: row; gap: 5px; padding: 10px 10px 5px 0px;";
 
-    const incidentButton = new ToggleButtonControl("Avoid Incidents?", Incident, handleIncidentToggle);
+    const incidentButton = new ToggleButtonControl("Avoid Incidents", Incident, handleIncidentToggle);
 
     controlContainer.appendChild(incidentButton.onAdd(mapRef.current));
 

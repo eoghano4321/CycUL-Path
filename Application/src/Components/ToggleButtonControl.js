@@ -9,6 +9,7 @@ class ToggleButtonControl {
 
   onAdd() {
     this.button = document.createElement("button");
+    this.button.className = "toggle-button";
     if(isMobile()){
       this.button.innerHTML = `<img src="${this.icon}" style="width: 16px; height: 16px; scale: 1.5">`;
       
