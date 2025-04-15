@@ -29,7 +29,7 @@
 .start-geocoder {
   position: absolute;
   z-index: 2;
-  top: 10px; /* Position below the first geocoder */
+  top: 10px; 
   left: 10px;
   width: 100%;
   max-width: 300px;
@@ -49,8 +49,8 @@
 .mapboxgl-ctrl-geocoder {
   border-radius: 16px !important;
   height: 36px !important;
-  font-size: 14px !important; /* Adjust font size */
-  line-height: 36px !important; /* Ensure vertical centering */
+  font-size: 14px !important;
+  line-height: 36px !important;
 }
 .mapboxgl-ctrl-geocoder input {
   height: 100% !important;

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.stream.Stream;
+import java.nio.file.Paths;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Point;
@@ -19,7 +19,7 @@ public class IncidentIndex {
 
     public static void loadGeoJSON(String filePath) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode root = objectMapper.readTree(new File(filePath));
+        JsonNode root = objectMapper.readTree(Paths.get(filePath).toFile());
 
         // Iterate through features
         for (JsonNode feature : root.get("features")) {

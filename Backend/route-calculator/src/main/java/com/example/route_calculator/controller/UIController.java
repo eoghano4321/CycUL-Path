@@ -16,7 +16,7 @@ public class UIController {
     @GetMapping("/map")
     public JsonNode getMap() {
         try {
-            byte[] jsonData = Files.readAllBytes(Paths.get("src/main/resources/OSM_Dublin_CycleNetwork.geojson"));
+            byte[] jsonData = Files.readAllBytes(Paths.get("/app/resources/OSM_Dublin_CycleNetwork.geojson"));
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readTree(jsonData);
         } catch (IOException e) {
@@ -28,7 +28,7 @@ public class UIController {
     @GetMapping("/incidents")
     public JsonNode getIncidents(){
         try {
-            byte[] jsonData = Files.readAllBytes(Paths.get("src/main/resources/dublin_incidents_mar2025.geojson"));
+            byte[] jsonData = Files.readAllBytes(Paths.get("/app/resources/dublin_incidents_mar2025.geojson"));
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readTree(jsonData);
         } catch (IOException e){

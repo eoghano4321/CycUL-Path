@@ -34,12 +34,12 @@ public class GraphService implements InitializingBean {
 
     private void loadGraph() {
         try {
-            String filePath = "src/main/resources/SerialisedGraph.json";
+            String filePath = "/app/resources/SerialisedGraph.json";
             if (Files.exists(Paths.get(filePath))) {
                 System.out.println("File exists");
                 graph = GraphSerialiser.loadGraphFromFile(filePath);
             } else {
-                JsonNode geoJson = GeoJsonLoader.loadGeoJson("src/main/resources/OSM_Dublin_CycleableRoads.geojson");
+                JsonNode geoJson = GeoJsonLoader.loadGeoJson("/app/resources/OSM_Dublin_CycleableRoads.geojson");
                 if (geoJson == null) {
                     System.err.println("No geojson loaded");
                     throw new IOException("GeoJSON file could not be loaded.");
@@ -58,7 +58,7 @@ public class GraphService implements InitializingBean {
 
     private void loadIncidents() {
         try {
-            String filePath = "src/main/resources/dublin_incidents_mar2025.geojson";
+            String filePath = "/app/resources/dublin_incidents_mar2025.geojson";
             if (Files.exists(Paths.get(filePath))) {
                 System.out.println("File exists");
                 IncidentIndex.loadGeoJSON(filePath);

@@ -8,6 +8,7 @@ import com.example.route_calculator.model.Node;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 
 public class GraphSerialiser {
@@ -24,7 +25,7 @@ public class GraphSerialiser {
     public static Graph<Node, DefaultWeightedEdge> loadGraphFromFile(String filePath){
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            GraphResponse graphResponse = objectMapper.readValue(new File(filePath), GraphResponse.class);
+            GraphResponse graphResponse = objectMapper.readValue(Paths.get(filePath).toFile(), GraphResponse.class);
             return convertToGraph(graphResponse);
         } catch (IOException e) {
             e.printStackTrace();
