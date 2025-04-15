@@ -49,7 +49,7 @@ public class AStar {
         Set<Node> visited = new HashSet<>();
 
         gScores.put(startNode, 0.0);
-        openSet.add(new PathNode(startNode, 0.0, manhattanDistance(startNode, endNode)));
+        openSet.add(new PathNode(startNode, 0.0, DistanceCalculator.haversine(startNode.lat, startNode.lon, endNode.lat, endNode.lon)));
 
         while (!openSet.isEmpty()) {
             PathNode current = openSet.poll();
@@ -57,7 +57,8 @@ public class AStar {
             if (!visited.add(current.node)) continue;
 
             if (current.node.equals(endNode)) {
-                return reconstructPath(cameFrom, current.node);
+                List<Node> path = reconstructPath(cameFrom, current.node);
+                return path;
             }
 
             for (DefaultWeightedEdge edge : graph.edgesOf(current.node)) {
@@ -65,50 +66,43 @@ public class AStar {
                 if (neighbor == null) continue;
 
                 double edgeWeight = graph.getEdgeWeight(edge);
-                double incidentWeight = getIncidentWeight(current.node, neighbor);
-                double totalWeight = edgeWeight + incidentWeight;
+                double incidentWeight = WeightCalculator.getIncidentWeight(current.node, neighbor);
+                double turnPenalty = WeightCalculator.getTurnPenalty(cameFrom.get(current.node), current.node, neighbor);
+
+                double totalWeight = edgeWeight + incidentWeight + turnPenalty;
 
                 double tentativeGScore = gScores.getOrDefault(current.node, Double.MAX_VALUE) + totalWeight;
 
                 if (tentativeGScore < gScores.getOrDefault(neighbor, Double.MAX_VALUE)) {
                     cameFrom.put(neighbor, current.node);
                     gScores.put(neighbor, tentativeGScore);
-                    double fScore = tentativeGScore + GeoJsonGraphBuilder.haversine(neighbor.lat, neighbor.lon, endNode.lat, endNode.lon);
+
+                    double hScore = DistanceCalculator.haversine(neighbor.lat, neighbor.lon, endNode.lat, endNode.lon);
+                    double fScore = tentativeGScore + hScore + (1e-6 * hScore);
+
                     openSet.add(new PathNode(neighbor, tentativeGScore, fScore));
                 }
             }
         }
 
         throw new IllegalArgumentException("No path found between the start and end nodes.");
-    }
+    }    
 
     private Node findClosestNode(double lat, double lon) {
         Node closestNode = graph.vertexSet().stream()
             .min((n1, n2) -> Double.compare(
-                GeoJsonGraphBuilder.haversine(n1.lat, n1.lon, lat, lon),
-                GeoJsonGraphBuilder.haversine(n2.lat, n2.lon, lat, lon)))
+                DistanceCalculator.haversine(n1.lat, n1.lon, lat, lon),
+                DistanceCalculator.haversine(n2.lat, n2.lon, lat, lon)))
             .orElse(null);
 
         if (closestNode != null) {
-            double distance = GeoJsonGraphBuilder.haversine(closestNode.lat, closestNode.lon, lat, lon);
+            double distance = DistanceCalculator.haversine(closestNode.lat, closestNode.lon, lat, lon);
             if (distance < 0.15) { // 15 meters in kilometers
                 return closestNode;
             }
         }
 
         return null;
-    }
-
-    private double manhattanDistance(Node n1, Node n2) {
-        return Math.abs(n1.lat - n2.lat) + Math.abs(n1.lon - n2.lon);
-    }
-
-    private double getIncidentWeight(Node n1, Node n2) {
-        double minLat = Math.min(n1.lat, n2.lat);
-        double maxLat = Math.max(n1.lat, n2.lat);
-        double minLon = Math.min(n1.lon, n2.lon);
-        double maxLon = Math.max(n1.lon, n2.lon);
-        return IncidentIndex.getIncidentWeight(minLat, maxLat, minLon, maxLon);
     }
 
     private Node getNeighbor(Node node, DefaultWeightedEdge edge) {

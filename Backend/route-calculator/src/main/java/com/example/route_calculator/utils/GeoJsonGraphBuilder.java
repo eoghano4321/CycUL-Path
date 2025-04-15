@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -20,70 +21,14 @@ import org.jgrapht.graph.SimpleWeightedGraph;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class GeoJsonGraphBuilder {
-    private static Map<String, Double> getSurfaceWeights() {
-        Map<String, Double> surfaceWeights = new HashMap<>();
-        surfaceWeights.put("asphalt", 1.0);
-        surfaceWeights.put("concrete", 1.1);
-        surfaceWeights.put("paved", 1.2);
-        surfaceWeights.put("gravel", 1.5);
-        surfaceWeights.put("dirt", 2.0);
-        surfaceWeights.put("sand", 3.0);
-        return surfaceWeights;
-    }
-
-    private static Map<String, Double> getRoadWeights() {
-        Map<String, Double> roadWeights = new HashMap<>();
-        roadWeights.put("cycleway", 1.0);
-        roadWeights.put("path", 1.0);
-        roadWeights.put("track", 1.0);
-        roadWeights.put("footway", 1.2);
-        roadWeights.put("living_street", 1.2);
-        roadWeights.put("pedestrian", 1.2);
-        roadWeights.put("tertiary", 1.5);
-        roadWeights.put("tertiary_link", 1.5);
-        roadWeights.put("residential", 1.5);
-        roadWeights.put("service", 1.5);
-        roadWeights.put("unclassified", 1.5);
-        roadWeights.put("bridleway", 1.5);
-        roadWeights.put("secondary", 1.8);
-        roadWeights.put("secondary_link", 1.8);
-        roadWeights.put("primary", 2.0);
-        roadWeights.put("primary_link", 2.0);
-        roadWeights.put("trunk", 2.0);
-        roadWeights.put("trunk_link", 2.0);
-        roadWeights.put("steps", 2.2);
-        return roadWeights;
-    }
-
-    private static Map<String, Double> getCyclewayWeights() {
-        Map<String, Double> cyclewayWeights = new HashMap<>();
-        cyclewayWeights.put("separate", 1.0);
-        cyclewayWeights.put("track", 1.0);
-        cyclewayWeights.put("lane", 1.2);
-        cyclewayWeights.put("share_busway", 1.5);
-        cyclewayWeights.put("shared_lane", 2.0);
-        cyclewayWeights.put("no", 3.0);
-        return cyclewayWeights;
-    }
-
-    private static final double MERGE_DISTANCE_THRESHOLD = 0.001; // 2 meters
-
-    public static double haversine(double lat1, double lon1, double lat2, double lon2) {
-        final double R = 6371; // Radius of Earth in km
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                   Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
-                   Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    }
+    private static final double MERGE_DISTANCE_THRESHOLD = 0.001; 
+    private static Logger logger = LoggerTool.getLogger();
 
     // Find or create a node at a given lat/lon
     private static Node findOrCreateNode(String id, double lat, double lon, Graph<Node, DefaultWeightedEdge> graph, List<Node> existingNodes) {
         synchronized (existingNodes) {
             for (Node node : existingNodes) {
-                if (haversine(lat, lon, node.lat, node.lon) < MERGE_DISTANCE_THRESHOLD) {
+                if (DistanceCalculator.haversine(lat, lon, node.lat, node.lon) < MERGE_DISTANCE_THRESHOLD) {
                     return node; // Return an existing node if within threshold
                 }
             }
@@ -101,15 +46,13 @@ public class GeoJsonGraphBuilder {
         }
     }
     
-
-
     public static Graph<Node, DefaultWeightedEdge> buildGraph(JsonNode geoJson) {
-        System.out.println("Building graph:");
+        logger.info("Building graph:");
         long start_time = System.currentTimeMillis();
 
-        Map<String, Double> surfaceWeights = getSurfaceWeights();
-        Map<String, Double> roadWeights = getRoadWeights();
-        Map<String, Double> cyclewayWeights = getCyclewayWeights();
+        Map<String, Double> surfaceWeights = WeightCalculator.getSurfaceWeights();
+        Map<String, Double> roadWeights = WeightCalculator.getRoadWeights();
+        Map<String, Double> cyclewayWeights = WeightCalculator.getCyclewayWeights();
         
         Graph<Node, DefaultWeightedEdge> graph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
         List<Node> allNodes = Collections.synchronizedList(new ArrayList<>());  // Thread-safe list
@@ -118,7 +61,6 @@ public class GeoJsonGraphBuilder {
 
         List<Callable<Void>> tasks = StreamSupport.stream(geoJson.get("features").spliterator(), true)
             .map(feature -> (Callable<Void>) () -> {
-                System.out.print(".");
                 List<Node> segmentNodes = new ArrayList<>();
                 String type = feature.get("geometry").get("type").asText();
                 JsonNode coordinates = feature.get("geometry").get("coordinates");
@@ -140,14 +82,13 @@ public class GeoJsonGraphBuilder {
                     for (Node node : segmentNodes) {
                         graph.addVertex(node);  // Add all segment nodes in one go
                     }
-                    System.out.print("+");
         
                     for (int i = 0; i < segmentNodes.size() - 1; i++) {
                         Node n1 = segmentNodes.get(i);
                         Node n2 = segmentNodes.get(i + 1);
                         
                         if (!graph.containsEdge(n1, n2)) {  // Avoid redundant edge lookups
-                            double distance = haversine(n1.lat, n1.lon, n2.lat, n2.lon);
+                            double distance = DistanceCalculator.haversine(n1.lat, n1.lon, n2.lat, n2.lon);
 
                             String surface = feature.get("properties").has("surface") ? feature.get("properties").get("surface").asText() : null;
                             String cycleway = feature.get("properties").has("cycleway") ? feature.get("properties").get("cycleway").asText() : null;
@@ -179,13 +120,13 @@ public class GeoJsonGraphBuilder {
         connectNearbyNodes(graph, allNodes);
 
         long end_time = System.currentTimeMillis();
-        System.out.println("Finished in " + (end_time - start_time) + "ms");
+        logger.info("Finished in " + (end_time - start_time) + "ms");
 
         return graph;
     }
 
     private static void connectNearbyNodes(Graph<Node, DefaultWeightedEdge> graph, List<Node> allNodes) {
-        System.out.println("\nConnecting nearby nodes...");
+        logger.info("\nConnecting nearby nodes...");
 
         // Step 1: Create a spatial index (grid-based lookup)
         Map<String, List<Node>> spatialGrid = new HashMap<>();
@@ -205,7 +146,7 @@ public class GeoJsonGraphBuilder {
                 for (Node n1 : cellNodes) {
                     for (Node n2 : neighbors) {
                         if (!n1.equals(n2) && graph.getEdge(n1, n2) == null) {
-                            double distance = haversine(n1.lat, n1.lon, n2.lat, n2.lon);
+                            double distance = DistanceCalculator.haversine(n1.lat, n1.lon, n2.lat, n2.lon);
                             if (distance < MERGE_DISTANCE_THRESHOLD) {
                                 DefaultWeightedEdge edge = graph.addEdge(n1, n2);
                                 if (edge != null) {
