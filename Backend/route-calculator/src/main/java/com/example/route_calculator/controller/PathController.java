@@ -18,10 +18,11 @@ public class PathController {
     public String getPathAsGeoJson(@RequestParam double startLat, 
         @RequestParam double startLon, 
         @RequestParam double endLat, 
-        @RequestParam double endLon) {
+        @RequestParam double endLon,
+        @RequestParam(required = false) boolean includeIncidents) {
         Graph<Node, DefaultWeightedEdge> graph = GraphService.getGraph();
         AStar aStar = new AStar(graph);
-        List<Node> path = aStar.findShortestPath(startLat, startLon, endLat, endLon);
+        List<Node> path = aStar.findShortestPath(startLat, startLon, endLat, endLon, includeIncidents);
         if(path == null || path.isEmpty()) {
             return "{\"error\": \"No path found\"}";
         }

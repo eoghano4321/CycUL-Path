@@ -34,7 +34,7 @@ public class AStar {
         this.graph = graph;
     }
 
-    public List<Node> findShortestPath(double startLat, double startLon, double endLat, double endLon) {
+    public List<Node> findShortestPath(double startLat, double startLon, double endLat, double endLon, boolean includeIncidents) {
         Node startNode = findClosestNode(startLat, startLon);
         Node endNode = findClosestNode(endLat, endLon);
 
@@ -66,7 +66,12 @@ public class AStar {
                 if (neighbor == null) continue;
 
                 double edgeWeight = graph.getEdgeWeight(edge);
-                double incidentWeight = WeightCalculator.getIncidentWeight(current.node, neighbor);
+                double incidentWeight;
+                if (includeIncidents) {
+                    incidentWeight = WeightCalculator.getIncidentWeight(current.node, neighbor);
+                } else {
+                    incidentWeight = 0.0;
+                }
                 double turnPenalty = WeightCalculator.getTurnPenalty(cameFrom.get(current.node), current.node, neighbor);
 
                 double totalWeight = edgeWeight + incidentWeight + turnPenalty;
