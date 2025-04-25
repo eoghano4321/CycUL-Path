@@ -22,6 +22,8 @@ const MapboxMap = () => {
   const [incidentsVisible, setIncidentsVisible] = useState(true);
   const [startLocation, setStartLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
+  const [incidentDescription, setIncidentDescription] = useState(null);
+  const [incidentDate, setIncidentDate] = useState(null);
   const [pathData, setPathData] = useState(null);
   const startSearch = new MapboxGeocoder({
     accessToken: mapboxgl.accessToken,
@@ -255,11 +257,72 @@ const MapboxMap = () => {
       });
     }
   }, [pathData]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
   
+    // Add a click event listener for the incident-layer
+    mapRef.current.on('click', 'incident-layer', (e) => {
+      if (e.features && e.features.length > 0) {
+        const incidentDescription = e.features[0].properties.Description;
+        const rawIncidentDate = e.features[0].properties.OccurredAt;
+
+        // Format the date
+        const date = new Date(rawIncidentDate);
+        const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1)
+          .toString()
+          .padStart(2, '0')}/${date.getFullYear()}`;
+
+        setIncidentDescription(incidentDescription);
+        setIncidentDate(formattedDate);
+      }
+    });
+  
+    // Change the cursor to a pointer when hovering over the incident-layer
+    mapRef.current.on('mouseenter', 'incident-layer', () => {
+      mapRef.current.getCanvas().style.cursor = 'pointer';
+    });
+  
+    // Reset the cursor when leaving the incident-layer
+    mapRef.current.on('mouseleave', 'incident-layer', () => {
+      mapRef.current.getCanvas().style.cursor = '';
+    });
+  
+    return () => {
+      // Clean up event listeners when the component unmounts
+      mapRef.current.off('click', 'incident-layer');
+      mapRef.current.off('mouseenter', 'incident-layer');
+      mapRef.current.off('mouseleave', 'incident-layer');
+    };
+  }, []);
 
   return (
-    <div id="map-container" style={{ width: '100%', height: '100vh', position: 'absolute' }}>
-      <div id="map" style={{ height: '100%', position: 'absolute', width: '100%' }} />
+    <div id="map-container" style={{ width: '100vw', height: '100vh', position: 'absolute' }}>
+      <div id="map" style={{ height: '100%', width: '100vw', position: 'absolute' }} />
+      {incidentDescription && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '25px',
+            right: '10px',
+            backgroundColor: 'rgba(19, 54, 110, 0.8)',
+            padding: '10px',
+            borderRadius: '5px',
+            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
+            zIndex: 1000,
+            maxWidth: '300px', // Limit the width to 300px
+            wordWrap: 'break-word',
+          }}
+          onClick={() => {
+            setIncidentDescription(null)
+            setIncidentDate(null)
+          }}
+        >
+          <p style={{ margin: 0, fontSize: '14px', color: '#fff' }}>{incidentDescription}</p>
+          <hr style={{ border: '1px solid #fff' }} />
+          <p style={{ margin: 0, fontSize: '14px', color: '#fff' }}>{`Reported ${incidentDate}`}</p>
+        </div>
+    )}
       <ToastContainer 
         position="bottom-center" 
         autoClose={500} 
