@@ -22,6 +22,7 @@ const MapboxMap = () => {
   const [incidentsVisible, setIncidentsVisible] = useState(true);
   const [startLocation, setStartLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
+  const [routeDetails, setRouteDetails] = useState(null);
   const [incidentDescription, setIncidentDescription] = useState(null);
   const [incidentDate, setIncidentDate] = useState(null);
   const [pathData, setPathData] = useState(null);
@@ -67,13 +68,24 @@ const MapboxMap = () => {
   const handleSearch = async () => {
     if (startLocation && destinationLocation) {
       const path = await getShortestPath(startLocation[1], startLocation[0], destinationLocation[1], destinationLocation[0], incidentsVisible);
-      setPathData(path);
+      const parsedPath = JSON.parse(path); // Parse the JSON
+      console.log(parsedPath); // Log the parsed object
+      // Check if the parsed path has the expected structure and set routeDetails to the properties
+      if (parsedPath && parsedPath.features && parsedPath.features.length > 0 && parsedPath.features[0].properties) {
+        setRouteDetails(parsedPath.features[0].properties);
+      } else {
+        console.error("Parsed path does not contain expected features structure:", parsedPath);
+        toast.error("Received invalid route data from the server.");
+        setRouteDetails(null); // Clear potentially stale details
+      }
+      setPathData(path); // Keep the original JSON string for the map layer
     } else {
       toast.error("Please select both start and destination locations.");
     }
   };
 
   const handleCancel = () => {
+    setRouteDetails(null);
     setPathData(null);
     if (mapRef.current.getLayer('path-layer')) {
       mapRef.current.removeLayer('path-layer');
@@ -322,7 +334,45 @@ const MapboxMap = () => {
           <hr style={{ border: '1px solid #fff' }} />
           <p style={{ margin: 0, fontSize: '14px', color: '#fff' }}>{`Reported ${incidentDate}`}</p>
         </div>
-    )}
+      )}
+      {routeDetails && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '25px',
+            right: '40%',
+            left: '40%',
+            backgroundColor: 'rgba(19, 54, 110, 0.8)',
+            padding: '10px',
+            borderRadius: '5px',
+            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
+            zIndex: 1000,
+            maxWidth: '300px', // Limit the width to 300px
+            wordWrap: 'break-word',
+          }}
+          onClick={() => {
+            setRouteDetails(null)
+          }}
+        >
+          {(() => {
+            console.log("Route details:", routeDetails);
+            const travelTimeMinutes = parseFloat(routeDetails.travelTime, 10);
+            const hours = Math.floor(travelTimeMinutes / 60);
+            const minutes = Math.round(travelTimeMinutes % 60);
+            return (
+              <>
+                <p style={{ margin: 0, fontSize: '14px', color: '#fff' }}>
+                  {`Travel Time: ${hours > 0 ? `${hours} hr ` : ''}${minutes} min`}
+                </p>
+                <hr style={{ border: '1px solid #fff' }} />
+                <p style={{ margin: 0, fontSize: '14px', color: '#fff' }}>
+                  {`Historic Risk Score: ~${routeDetails.riskScore}%`}
+                </p>
+              </>
+            );
+          })()}
+        </div>
+      )}
       <ToastContainer 
         position="bottom-center" 
         autoClose={500} 

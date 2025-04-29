@@ -47,10 +47,10 @@ public class IncidentIndex {
     // Query incidents near a given segment
     public static double getIncidentWeight(double minLat, double maxLat, double minLon, double maxLon) {
         // adjust the search area slightly to ensure it includes the edges of the segment
-        minLat -=0.000005;
-        maxLat +=0.000005;
-        minLon -=0.000005;
-        maxLon +=0.000005;
+        minLat -=0.00005;
+        maxLat +=0.00005;
+        minLon -=0.00005;
+        maxLon +=0.00005;
         Envelope searchArea = new Envelope(minLon, maxLon, minLat, maxLat);
         try {
             Double queryResult = rtree.query(searchArea).stream().mapToDouble(result -> (double) result).sum();
