@@ -53,11 +53,11 @@ public class PathController {
                 // Calculate the distance between the two nodes
                 totalDistance += DistanceCalculator.haversine(node1.lat, node1.lon, node2.lat, node2.lon) * 1000;
                 // Get the incident weight and convert to a percentage
-                totalIncidentWeight += WeightCalculator.getIncidentWeight(node1, node2) * 100;
+                totalIncidentWeight += WeightCalculator.getIncidentWeight(node1, node2) * 150;
             }
         }
         
-        double riskScore = Math.min(totalIncidentWeight, 99.0);
+        double riskScore = Math.min(Math.round((totalIncidentWeight / totalDistance) * 100), 99.0); 
         double travelTime = (totalDistance / 3) / 60; // Assuming an average speed of 3 m/s
 
         ObjectMapper mapper = new ObjectMapper();
