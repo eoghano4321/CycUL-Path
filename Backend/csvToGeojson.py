@@ -16,8 +16,9 @@ def generate_feature(row):
         "properties": {
             "IncidentType": row['IncidentType'],
             "Outcome": row['Outcome'],
-            "MultiParty": str(row['MultiParty']),  # Ensure it's a string ("True"/"False")
             "CauseCategory": row['CauseCategory'],
+            "Description": row['Description'],
+            "OccurredAt": row['OccurredAt'],
             "Severity": row['CalculatedSeverity']
         }
     }

@@ -1,17 +1,9 @@
 import pandas as pd
-import gc
 from datetime import datetime
 from transformers import pipeline
-import tensorflow as tf
-import csv
-import os
-os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
 
-
-# Load zero-shot classification pipeline
 classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 
-# Define factors as candidate labels
 factors = [
     "Dim Lighting",
     "Broken Streetlight",
@@ -32,23 +24,7 @@ factors = [
     "Unlikely to repeat"
 ]
 
-# Function to detect factors using zero-shot classification
-def detect_factors(description):
-    # Perform zero-shot classification
-    result = classifier(description, factors, multi_label=True)
-    
-    # Map scores back to their original factor order
-    label_to_score = dict(zip(result['labels'], result['scores']))
-    original_order_scores = [label_to_score[label] for label in factors]
-    
-    # Filter factors based on the threshold in the original order
-    detected_factors = [factors[i] for i, score in enumerate(original_order_scores) if score > 0.9]  # Adjust threshold as needed
-    
-    return detected_factors
-
-
-# Function to calculate severity score
-weights = {  # Factor weights as before
+weights = {
     "Dim Lighting": 0.7,
     "Bad Junction": 0.45,
     "No roadsigns": 0.5,
@@ -72,73 +48,83 @@ weights = {  # Factor weights as before
     "Unlikely to repeat": -0.1
 }
 
-# Generator for loading data in chunks
-def data_generator(file_path, chunk_size=100):
-    for chunk in pd.read_csv(file_path, chunksize=chunk_size):
-        for _, row in chunk.iterrows():
-            yield row
+def process_data_incrementally(input_file, output_file, chunk_size=100):
+    try:
+        header_df = pd.read_csv(input_file, nrows=0)
+        header_df['CalculatedSeverity'] = None
+        header_df.to_csv(output_file, index=False, mode='w', encoding='utf-8')
+    except Exception as e:
+        print(f"Error initializing output file: {e}")
+        return
 
-# Function to calculate severity score for each row
-def calculate_severity(row):
-    print(row['Description'])
-    factors = detect_factors(row['Description'])
-    if row['IncidentType'] == "Collision":
-        if row['Outcome'] == "No injuries":
-            factors.append("Collision and No Injury")
-        elif row['Outcome'] == "Minor injuries":
-            factors.append("Collision and Minor Injury")
-        elif row['Outcome'] == "Serious injuries":
-            factors.append("Collision and Serious Injury")
-        elif row['Outcome'] == "Fatality":
-            factors.append("Collision and Fatality")
-    elif row['IncidentType'] == "Near Miss":
-        factors.append("Near Miss")
-    else:
-        factors.append("Hazard")
-    print(factors)
-    # Calculate weight sum and number of factors
-    total_weight = sum(weights.get(factor, 0) for factor in factors)
-    num_factors = len(factors) if factors else 1  # Avoid division by zero
-    base_score = total_weight / num_factors
+    total_rows_processed = 0
+    # Estimate total rows for progress (optional, could read whole file first if needed)
+    # total_rows = sum(1 for row in open(input_file, 'r', encoding='utf-8')) - 1 # Subtract header
+    # print(f"Estimated total rows: {total_rows}")
 
-    # Time decay factor
-    occurrence_date = datetime.strptime(row['OccurredAt'], '%Y-%m-%dT%H:%M')
-    months_since = (datetime.now() - occurrence_date).days // 30
-    time_decay = 0.01 * months_since
+    for chunk in pd.read_csv(input_file, chunksize=chunk_size):
+        print(f"Processing chunk of size {len(chunk)}...")
+        descriptions = chunk['Description'].tolist()
+        
+        # Handle potential None or non-string values in descriptions
+        descriptions = [str(d) if pd.notna(d) else "" for d in descriptions]
 
-    # Final severity score
-    severity_score = base_score - time_decay
-    print(severity_score)
-    print(max(severity_score, 0.05))
-    return max(severity_score, 0.05)  # Ensure score is at least 0.05
+        # Perform batch inference
+        batch_results = classifier(descriptions, factors, multi_label=True)
 
-# Incremental processing and saving
-def process_data_incrementally(input_file, output_file):
-    with open(output_file, mode='w', newline='', encoding='utf-8') as out_file:
-        i = 0
-        # Initialize CSV writer
-        csv_writer = None
-        for chunk in pd.read_csv(input_file, chunksize=1):  # Process one row at a time
-            print("[" + str(i) + " / 1148]")
-            for _, row in chunk.iterrows():
-                i += 1
-                # Calculate severity score
-                row['CalculatedSeverity'] = calculate_severity(row).round(3)
+        calculated_severities = []
+        for index, row in chunk.iterrows():
+            print(f"Processing row {index}...")
+            classifier_result = batch_results[index % chunk_size] 
 
-                # Initialize writer with headers
-                if csv_writer is None:
-                    csv_writer = csv.DictWriter(out_file, fieldnames=row.keys())
-                    csv_writer.writeheader()
+            # Extract detected factors based on threshold
+            label_to_score = dict(zip(classifier_result['labels'], classifier_result['scores']))
+            original_order_scores = [label_to_score.get(label, 0) for label in factors] # Use .get for safety
+            detected_factors = [factors[i] for i, score in enumerate(original_order_scores) if score > 0.9]
 
-                # Write the row to the file
-                csv_writer.writerow(row.to_dict())
+            # Add IncidentType/Outcome factors
+            if row['IncidentType'] == "Collision":
+                if row['Outcome'] == "No injuries":
+                    detected_factors.append("Collision and No Injury")
+                elif row['Outcome'] == "Minor injuries":
+                    detected_factors.append("Collision and Minor Injury")
+                elif row['Outcome'] == "Serious injuries":
+                    detected_factors.append("Collision and Serious Injury")
+                elif row['Outcome'] == "Fatality":
+                    detected_factors.append("Collision and Fatality")
+            elif row['IncidentType'] == "Near Miss":
+                detected_factors.append("Near Miss")
+            else: # Assuming Hazard if not Collision or Near Miss
+                detected_factors.append("Hazard")
 
-                # Explicitly call garbage collection
-                gc.collect()
+            # Calculate base score
+            total_weight = sum(weights.get(factor, 0) for factor in detected_factors)
+            num_factors = len(detected_factors) if detected_factors else 1
+            base_score = total_weight / num_factors
 
-# Specify the file paths
+            # Calculate time decay
+            try:
+                occurrence_date = datetime.strptime(row['OccurredAt'], '%Y-%m-%dT%H:%M')
+                months_since = (datetime.now() - occurrence_date).days // 30
+                time_decay = 0.01 * months_since
+            except (ValueError, TypeError):
+                time_decay = 0
+
+            severity_score = base_score - time_decay
+            final_severity = max(severity_score, 0.05)
+
+            calculated_severities.append(final_severity)
+
+        chunk['CalculatedSeverity'] = calculated_severities
+        
+        chunk.to_csv(output_file, mode='a', header=False, index=False, encoding='utf-8')
+
+        total_rows_processed += len(chunk)
+        print(f"Processed {total_rows_processed} rows...")
+
 input_file = 'TimedIncidentsDublin.csv'
-output_file = 'IncidentsWithSeverityDublin.csv'
+output_file = 'IncidentsWithSeverityDublin270425.csv' 
 
-# Process the data
-process_data_incrementally(input_file, output_file)
+process_data_incrementally(input_file, output_file, chunk_size=100) 
+
+print("Processing complete.")
