@@ -8,17 +8,34 @@ import com.example.route_calculator.model.Node;
 public class WeightCalculator {
     public static double getTurnPenalty(Node prev, Node current, Node next) {
         if (prev == null || current == null || next == null) return 0.0;
-    
-        // Calculate the change in angle between prev→current and current→next
-        double angle1 = Math.atan2(current.lat - prev.lat, current.lon - prev.lon);
-        double angle2 = Math.atan2(next.lat - current.lat, next.lon - current.lon);
-        double angleDiff = Math.abs(angle1 - angle2);
-    
-        // Normalize the angle to the range [0, π]
-        angleDiff = Math.min(angleDiff, Math.PI * 2 - angleDiff);
-    
-        // Penalize sharp turns more than straight lines (up to 0.01 for 180-degree turn)
-        return 0.2 * (angleDiff / Math.PI);
+
+        // Calculate vectors for the segments
+        double v1x = current.lon - prev.lon;
+        double v1y = current.lat - prev.lat;
+        double v2x = next.lon - current.lon;
+        double v2y = next.lat - current.lat;
+
+        // Calculate magnitudes
+        double mag1 = Math.hypot(v1x, v1y);
+        double mag2 = Math.hypot(v2x, v2y);
+
+        // Avoid division by zero if a segment has zero length
+        if (mag1 == 0 || mag2 == 0) {
+            return 0.0; 
+        }
+
+        // Calculate dot product
+        double dotProduct = v1x * v2x + v1y * v2y;
+
+        // Calculate cosine of the angle
+        double cosTheta = dotProduct / (mag1 * mag2);
+
+        // Clamp cosTheta to [-1, 1] to handle potential floating-point inaccuracies
+        cosTheta = Math.max(-1.0, Math.min(1.0, cosTheta));
+
+        // Calculate penalty: 0 for straight (cosTheta=1), max penalty for U-turn (cosTheta=-1)
+        // Using 0.1 as the factor 'k' to make the max penalty (1 - (-1)) * 0.1 = 0.2, matching the previous max.
+        return 0.1 * (1.0 - cosTheta);
     }
     
     public static double getIncidentWeight(Node n1, Node n2) {
@@ -43,8 +60,8 @@ public class WeightCalculator {
     public static Map<String, Double> getRoadWeights() {
         Map<String, Double> roadWeights = new HashMap<>();
         roadWeights.put("cycleway", 1.0);
-        roadWeights.put("path", 1.0);
         roadWeights.put("track", 1.0);
+        roadWeights.put("path", 1.2);
         roadWeights.put("footway", 1.2);
         roadWeights.put("living_street", 1.2);
         roadWeights.put("pedestrian", 1.2);
@@ -60,7 +77,7 @@ public class WeightCalculator {
         roadWeights.put("primary_link", 2.0);
         roadWeights.put("trunk", 2.0);
         roadWeights.put("trunk_link", 2.0);
-        roadWeights.put("steps", 2.2);
+        roadWeights.put("steps", 3.0);
         return roadWeights;
     }
 
@@ -69,9 +86,9 @@ public class WeightCalculator {
         cyclewayWeights.put("separate", 1.0);
         cyclewayWeights.put("track", 1.0);
         cyclewayWeights.put("lane", 1.2);
-        cyclewayWeights.put("share_busway", 1.5);
-        cyclewayWeights.put("shared_lane", 2.0);
-        cyclewayWeights.put("no", 3.0);
+        cyclewayWeights.put("share_busway", 1.4);
+        cyclewayWeights.put("shared_lane", 1.5);
+        cyclewayWeights.put("no", 2.0);
         return cyclewayWeights;
     }
 }

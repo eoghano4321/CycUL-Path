@@ -48,6 +48,7 @@ public class GraphService implements InitializingBean {
                 System.out.println("File does not exist");
                 graph = GeoJsonGraphBuilder.buildGraph(geoJson);
                 System.out.println("Graph has " + graph.edgeSet().size() + " edges.");
+                System.out.println("Graph has " + graph.vertexSet().size() + " nodes.");
                 GraphSerialiser.saveGraph(getGraphAsJson(), filePath);
             }
         } catch (IOException e) {
