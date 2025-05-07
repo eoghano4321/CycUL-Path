@@ -1,0 +1,20 @@
+{
+  "autorun": false,
+  "terminals": [
+      {
+          "name": "Application",
+          "command": "npm start",
+          "cwd": "Application"
+      },
+      {
+          "name": "Backend Route Calculator",
+          "command": "mvn spring-boot:run",
+          "cwd": "Backend/route-calculator"
+      },
+      {
+          "name": "Ngrok",
+          "command": "ngrok http --url=factual-friendly-collie.ngrok-free.app http://localhost:8080",
+          "cwd": ""
+      }
+  ]
+}
