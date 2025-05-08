@@ -57,7 +57,21 @@ public class PathController {
             }
         }
         
-        double riskScore = Math.min(Math.round((totalIncidentWeight / totalDistance) * 100), 99.0); 
+        double riskScore;
+        if (totalDistance == 0.0) {
+            riskScore = 0.0;
+        } else {
+            // Dividing by Math.sqrt(totalDistance) instead of totalDistance makes the score
+            // less sensitive to the overall length of the route. This helps prevent
+            // long routes from appearing to have an artificially low risk score simply
+            // due to their length. The multiplier 10.0 is used to rescale the score
+            // to a range comparable to the previous calculation, ensuring that a
+            // 100m route with a given incident density retains a similar score,
+            // while longer routes with similar incident densities will now score higher.
+            double rawRiskScore = (totalIncidentWeight / Math.sqrt(totalDistance)) * 10.0;
+            riskScore = Math.min(Math.round(rawRiskScore), 99.0);
+        }
+        
         double travelTime = (totalDistance / 3) / 60; // Assuming an average speed of 3 m/s
 
         ObjectMapper mapper = new ObjectMapper();
@@ -72,6 +86,7 @@ public class PathController {
         ObjectNode properties = mapper.createObjectNode();
         properties.put("riskScore", riskScore); // Use the calculated total incident weight
         properties.put("travelTime", travelTime); // Add travel time to properties
+        properties.put("totalDistance", totalDistance); // Add total distance to properties
         feature.set("properties", properties);
 
         ObjectNode geometry = mapper.createObjectNode();
