@@ -32,7 +32,7 @@
   top: 10px; 
   left: 10px;
   width: 100%;
-  max-width: 300px;
+  max-width: 200px;
   height: 36px;
 }
 
@@ -42,7 +42,7 @@
   top: 50px; /* Position below the first geocoder */
   left: 10px;
   width: 100%;
-  max-width: 300px;
+  max-width: 200px;
   height: 36px;
 }
 
@@ -84,4 +84,31 @@ html, body {
   padding: 0;
   overflow-x: hidden;
   width: 100%;
+}
+
+/* Styles for the custom checkbox tick in ToggleButtonControl */
+input[type="checkbox"].toggle-checkbox {
+  position: relative;
+  border: none;
+}
+
+input[type="checkbox"].toggle-checkbox:checked {
+  background-color: rgba(19, 54, 110, 0.8);
+}
+
+input[type="checkbox"].toggle-checkbox:not(:checked) {
+  background-color: rgba(138, 138, 138, 0.8);
+}
+
+input[type="checkbox"].toggle-checkbox:checked::after {
+  content: '✓'; 
+  display: block;
+  position: absolute;
+  color: white; 
+  font-size: 14px; 
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%); 
+  border: none;
+  line-height: 1; 
 }

@@ -16,11 +16,12 @@ class SearchButton {
       fontSize: "14px",
       borderRadius: "16px",
       display: "inline-flex",
-      cursor: "pointer", 
-      boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+      cursor: "pointer",
       minWidth: "200px",
       alignItems: "center",
       justifyContent: "center",
+      border: "1px solid #ccc",
+      height: "40px",
     });
     const logoElement = document.createElement("img");
     logoElement.src = Logo;

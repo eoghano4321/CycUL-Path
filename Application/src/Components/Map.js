@@ -19,13 +19,14 @@ mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 const MapboxMap = () => {
   const mapRef = useRef(null);
   const searchButton = useRef(null);
-  const [incidentsVisible, setIncidentsVisible] = useState(true);
+  const [avoidIncidents, setAvoidIncidents] = useState(true);
   const [startLocation, setStartLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [routeDetails, setRouteDetails] = useState(null);
   const [incidentDescription, setIncidentDescription] = useState(null);
   const [incidentDate, setIncidentDate] = useState(null);
   const [pathData, setPathData] = useState(null);
+  const [showRiskExplanation, setShowRiskExplanation] = useState(false);
   const startSearch = new MapboxGeocoder({
     accessToken: mapboxgl.accessToken,
     mapboxgl: mapboxgl,
@@ -55,19 +56,19 @@ const MapboxMap = () => {
   })
 
   const handleIncidentToggle = () => {
-    setIncidentsVisible((prev) => {
-      const newVisibility = !prev;
-      const buttonElement = document.querySelector('.toggle-button');
+    setAvoidIncidents((prev) => {
+      const newAvoid = !prev;
+      const buttonElement = document.querySelector('.toggle-checkbox');
       if (buttonElement) {
-        buttonElement.style.backgroundColor = newVisibility ? 'rgba(19, 54, 110, 0.8)' : 'rgba(46, 51, 59, 0.8)'; 
+        buttonElement.checked = newAvoid; 
       }
-      return newVisibility;
+      return newAvoid;
     });
   };
 
   const handleSearch = async () => {
     if (startLocation && destinationLocation) {
-      const path = await getShortestPath(startLocation[1], startLocation[0], destinationLocation[1], destinationLocation[0], incidentsVisible);
+      const path = await getShortestPath(startLocation[1], startLocation[0], destinationLocation[1], destinationLocation[0], avoidIncidents);
       const parsedPath = JSON.parse(path); // Parse the JSON
       console.log(parsedPath); // Log the parsed object
       // Check if the parsed path has the expected structure and set routeDetails to the properties
@@ -75,7 +76,7 @@ const MapboxMap = () => {
         setRouteDetails(parsedPath.features[0].properties);
       } else {
         console.error("Parsed path does not contain expected features structure:", parsedPath);
-        toast.error("Received invalid route data from the server.");
+        toast.error("Received invalid route data from the server. Please ensure the start and end location are in Dublin and try again.");
         setRouteDetails(null); // Clear potentially stale details
       }
       setPathData(path); // Keep the original JSON string for the map layer
@@ -101,7 +102,7 @@ const MapboxMap = () => {
     if (searchButton.current) {
       searchButton.current.updateOnClick(handleSearch);
     }
-  }, [startLocation, destinationLocation, incidentsVisible]);
+  }, [startLocation, destinationLocation, avoidIncidents]);
 
   useEffect(() => {
     const map = new mapboxgl.Map({
@@ -112,32 +113,32 @@ const MapboxMap = () => {
     });
   
     mapRef.current = map;
-    const controlContainer = document.createElement("div");
-    controlContainer.style = "display: flex; flex-direction: row; gap: 5px; padding: 10px 10px 5px 0px;";
-
-    const incidentButton = new ToggleButtonControl("Avoid Incidents", Incident, handleIncidentToggle);
-
-    controlContainer.appendChild(incidentButton.onAdd(mapRef.current));
-
-    const toggleWrapper = {
-      onAdd() {
-        return controlContainer;
-      },
-      onRemove() {
-        controlContainer.parentNode.removeChild(controlContainer);
-      },
-    };
-
-    mapRef.current.addControl(toggleWrapper, 'top-right');
+    
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    // Create a master container for all controls
+    const controlsContainer = document.createElement('div');
+    controlsContainer.id = 'controls-container';
+    // Added min-width and explicitly set align-items to stretch
+    controlsContainer.style = "position: absolute; top: 10px; left: 10px; background-color: white; padding: 10px; border-radius: 16px; display: flex; flex-direction: column; gap: 5px; min-width: 240px; min-height: 180px; align-items: stretch;";
+
+    if(document.getElementById('controls-container')) {
+      document.getElementById('controls-container').remove();
+    }
+    // Append to map-container instead of document.body
+    const mapContainerElement = document.getElementById('map-container');
+    if (mapContainerElement) {
+        mapContainerElement.appendChild(controlsContainer);
+    } else {
+        console.error("Could not find map-container element to append controls. Falling back to document.body.");
+        document.body.appendChild(controlsContainer); // Fallback if map-container is not found
+    }
   
     const startGeocoderContainer = document.createElement('div');
     startGeocoderContainer.id = 'start-geocoder';
     startGeocoderContainer.className = 'start-geocoder';
-    if(document.getElementById('start-geocoder')) {
-      document.getElementById('start-geocoder').remove();
-    }
-    document.body.appendChild(startGeocoderContainer);
+    startGeocoderContainer.style = "width: 100%;"; // Ensure it takes full width of parent
+    controlsContainer.appendChild(startGeocoderContainer);
 
     // Add the second geocoder to the custom container
     startGeocoderContainer.appendChild(startSearch.onAdd(mapRef.current));
@@ -151,10 +152,8 @@ const MapboxMap = () => {
     const destGeocoderContainer = document.createElement('div');
     destGeocoderContainer.id = 'destination-geocoder';
     destGeocoderContainer.className = 'destination-geocoder';
-    if(document.getElementById('destination-geocoder')) {
-      document.getElementById('destination-geocoder').remove();
-    }
-    document.body.appendChild(destGeocoderContainer);
+    destGeocoderContainer.style = "width: 100%;"; // Ensure it takes full width of parent
+    controlsContainer.appendChild(destGeocoderContainer);
 
     // Add the second geocoder to the custom container
     destGeocoderContainer.appendChild(destinationSearch.onAdd(mapRef.current));
@@ -165,6 +164,8 @@ const MapboxMap = () => {
       console.log(`Destination: Longitude: ${coordinates[0]}, Latitude: ${coordinates[1]}`);
     });
 
+    const incidentButton = new ToggleButtonControl("Avoid Incidents", handleIncidentToggle);
+
     searchButton.current = new SearchButton("Directions");
 
     const cancelButton = CancelButton(handleCancel);
@@ -172,14 +173,25 @@ const MapboxMap = () => {
     const searchButtonContainer = document.createElement("div");
     searchButtonContainer.id = "search-button-container";
     searchButtonContainer.className = "search-button";
-    searchButtonContainer.style = "align-content: center; display: flex;";
+    // Added width: '100%' to ensure it stretches if align-items:stretch on parent isn't enough or overridden
+    searchButtonContainer.style = "align-content: center; display: flex; flex-direction: column; width: 200px;"; 
 
-    if(document.getElementById('search-button-container')) {
-      document.getElementById('search-button-container').remove();
-    }
-    document.body.appendChild(searchButtonContainer);
-    document.getElementById('search-button-container').appendChild(searchButton.current.onAdd(mapRef.current));
-    document.getElementById('search-button-container').appendChild(cancelButton);
+    // Create a new container for horizontal alignment of search and cancel buttons
+    const horizontalButtonContainer = document.createElement("div");
+    horizontalButtonContainer.id = "horizontal-button-container";
+    horizontalButtonContainer.style = "display: flex; flex-direction: row; justify-content: center; gap: 5px;"; // Added gap for spacing
+
+    controlsContainer.appendChild(searchButtonContainer);
+
+    // Add incident button to the main container
+    searchButtonContainer.appendChild(incidentButton.onAdd(mapRef.current));
+
+    // Add search and cancel buttons to the horizontal container
+    horizontalButtonContainer.appendChild(searchButton.current.onAdd(mapRef.current));
+    horizontalButtonContainer.appendChild(cancelButton);
+
+    // Add the horizontal container to the main search button container
+    searchButtonContainer.appendChild(horizontalButtonContainer);
 
 
     const logo = document.createElement("img");
@@ -231,23 +243,19 @@ const MapboxMap = () => {
   
     return () => mapRef.current.remove();
   }, []);
-
-  useEffect(() => {
-    if (mapRef.current && mapRef.current.getLayer('incident-layer')) {
-      mapRef.current.setLayoutProperty('incident-layer', 'visibility', incidentsVisible ? 'visible' : 'none');
-    }
-  }, [incidentsVisible]);
   
   useEffect(() => {
     console.log("Path data updated:", pathData);
     if (!pathData || !mapRef.current) return;
+
+    const geojson = JSON.parse(pathData);
     
     if (mapRef.current.getSource('path-source')) {
-      mapRef.current.getSource('path-source').setData(JSON.parse(pathData));
+      mapRef.current.getSource('path-source').setData(geojson);
     } else {
       mapRef.current.addSource('path-source', {
         type: 'geojson',
-        data: JSON.parse(pathData),
+        data: geojson,
       });
     }
     if (mapRef.current.getLayer('path-layer')) {
@@ -267,6 +275,23 @@ const MapboxMap = () => {
         },
         layout: { visibility: 'visible' },
       });
+    }
+
+    // Fit map to path bounds
+    if (geojson.features && geojson.features.length > 0 && geojson.features[0].geometry && geojson.features[0].geometry.coordinates) {
+      const coordinates = geojson.features[0].geometry.coordinates;
+      if (coordinates.length > 0) {
+        const bounds = new mapboxgl.LngLatBounds(
+          coordinates[0],
+          coordinates[0]
+        );
+        for (const coord of coordinates) {
+          bounds.extend(coord);
+        }
+        mapRef.current.fitBounds(bounds, {
+          padding: { top: 100, bottom: 250, left: 350, right: 100 } // Adjust padding as needed
+        });
+      }
     }
   }, [pathData]);
 
@@ -322,8 +347,9 @@ const MapboxMap = () => {
             borderRadius: '5px',
             boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
             zIndex: 1000,
-            maxWidth: '300px', // Limit the width to 300px
+            maxWidth: '300px',
             wordWrap: 'break-word',
+            cursor: 'pointer',
           }}
           onClick={() => {
             setIncidentDescription(null)
@@ -347,27 +373,51 @@ const MapboxMap = () => {
             borderRadius: '5px',
             boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
             zIndex: 1000,
-            maxWidth: '300px', // Limit the width to 300px
+            maxWidth: '300px',
             wordWrap: 'break-word',
+            cursor: 'pointer',
           }}
           onClick={() => {
             setRouteDetails(null)
           }}
         >
           {(() => {
-            console.log("Route details:", routeDetails);
             const travelTimeMinutes = parseFloat(routeDetails.travelTime, 10);
             const hours = Math.floor(travelTimeMinutes / 60);
             const minutes = Math.round(travelTimeMinutes % 60);
+            const distanceInKm = Math.round(parseFloat(routeDetails.totalDistance, 10) / 10) / 100; // Convert to km rounded to 2 decimal places
             return (
               <>
                 <p style={{ margin: 0, fontSize: '14px', color: '#fff' }}>
-                  {`Travel Time: ${hours > 0 ? `${hours} hr ` : ''}${minutes} min`}
+                  {`${hours > 0 ? `${hours}hr ` : ''}${minutes}min (${distanceInKm} km)`}
                 </p>
                 <hr style={{ border: '1px solid #fff' }} />
                 <p style={{ margin: 0, fontSize: '14px', color: '#fff' }}>
-                  {`Historic Risk Score: ~${routeDetails.riskScore}%`}
+                  {`Historic Risk Score: ~${routeDetails.riskScore}%  `}
+                  <span 
+                    onMouseEnter={() => setShowRiskExplanation(true)}
+                    onMouseLeave={() => setShowRiskExplanation(false)}
+                    style={{ cursor: 'pointer', marginLeft: '5px', fontWeight: 'bold' }}
+                  >
+                    Learn more
+                  </span>
                 </p>
+                {showRiskExplanation && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '100%', // Position above the parent
+                    left: '50%',
+                    transform: 'translateX(-50%)', // Center horizontally
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    color: '#fff',
+                    padding: '5px',
+                    borderRadius: '3px',
+                    fontSize: '12px',
+                    marginBottom: '5px', // Space between icon and tooltip
+                  }}>
+                    The risk score is calculated based on the number and severity of incidents along the route, relative to the distance. A higher score indicates a higher risk.
+                  </div>
+                )}
               </>
             );
           })()}
@@ -375,7 +425,7 @@ const MapboxMap = () => {
       )}
       <ToastContainer 
         position="bottom-center" 
-        autoClose={500} 
+        autoClose={3000} 
         closeButton={false} 
         theme='light'
       />
