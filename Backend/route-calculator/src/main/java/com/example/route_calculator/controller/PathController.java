@@ -12,16 +12,32 @@ import com.example.route_calculator.utils.WeightCalculator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.springframework.beans.factory.annotation.Value; // Added import
 
 @RestController
 @RequestMapping("/api")
 public class PathController {
+
+    @Value("${API_AUTH_TOKEN}") // Injects the value of the API_AUTH_TOKEN environment variable
+    private String expectedAuthToken;
+
     @GetMapping("/shortest-path")
-    public String getPathAsGeoJson(@RequestParam double startLat, 
+    public String getPathAsGeoJson(@RequestHeader("Authorization") String receivedToken, // Added Authorization header
+        @RequestParam double startLat, 
         @RequestParam double startLon, 
         @RequestParam double endLat, 
         @RequestParam double endLon,
         @RequestParam(required = false, defaultValue = "false") boolean includeIncidents) {
+
+        // Check if the received token matches the expected token from the environment variable
+        if (expectedAuthToken == null || expectedAuthToken.isEmpty() || !expectedAuthToken.equals(receivedToken)) {
+            // Handle unauthorized access
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("error", "Unauthorized: Missing or invalid token");
+            return errorResponse.toString();
+        }
+
         Graph<Node, DefaultWeightedEdge> graph = GraphService.getGraph();
         AStar aStar = new AStar(graph);
         
