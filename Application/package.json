@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@linaria/core": "^6.2.0",
     "@linaria/react": "^6.2.1",
     "@mapbox/mapbox-gl-geocoder": "^5.0.3",
